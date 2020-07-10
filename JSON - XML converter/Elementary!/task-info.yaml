@@ -104,8 +104,9 @@ files:
     }
   learner_created: false
 feedback_link: https://hyperskill.org/projects/61/stages/329/implement
-status: Failed
+status: Solved
 feedback:
-  message: Failed to launch checking
-  time: Wed, 08 Jul 2020 11:40:38 UTC
+  message: Congratulations! Continue on <a href="https://hyperskill.org/projects/61/stages/329/implement">JetBrains
+    Academy</a>
+  time: Fri, 10 Jul 2020 13:34:46 UTC
 record: -1
