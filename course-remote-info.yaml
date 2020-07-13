@@ -233,9 +233,9 @@ topics:
   - title: Wildcards
     theory_id: 9455
   - title: Type Erasure
-    theory_id: 3560
+    theory_id: 10086
   - title: Reification
-    theory_id: 3561
+    theory_id: 10087
   - title: Abstract class
     theory_id: 3597
   - title: Abstract class vs interface
