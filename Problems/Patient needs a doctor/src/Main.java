@@ -6,4 +6,4 @@ class Patient {
         System.out.printf("Hello, my name is %s, I need a doctor.", name);
     }
 }
-K
+
