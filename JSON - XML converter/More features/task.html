@@ -6,11 +6,11 @@
 
 <p>Also, don't suppose that a comma should be right after the element, JSON lets you place it after any amount of spaces and new lines. You can see this in the example 3.</p>
 
-<p>Other thing is that JSON can contain boolean values: <code class="language-json">true</code> and <code class="language-json">false</code>. During conversion you should turn them into strings <code class="language-json">"true"</code> and <code class="language-json">"false"</code>.</p>
+<p>Other thing is that JSON can contain boolean values: <code class="language-json">true</code> and <code class="language-json">false</code>. During conversion, you should turn them into strings <code class="language-json">"true"</code> and <code class="language-json">"false"</code>.</p>
 
 <p>Another thing is that XML supports values of attributes enclosed with single quotes, not only double quotes. For example, <code class="language-json">&lt;xml attr="xml"&gt;&lt;/xml&gt;</code> and <code class="language-json">&lt;xml attr='xml'&gt;&lt;/xml&gt;</code> means the same and both valid in XML.</p>
 
-<p>At last, in this stage you should skip any XML header that starts with <code class="language-json">&lt;?</code> and ends with <code class="language-json">?&gt;</code> - there is no need for this in the JSON.</p>
+<p>At last, in this stage you should skip any XML header that starts with <code class="language-json">&lt;?</code> and ends with <code class="language-json">?&gt;</code>. There is no need for this in the JSON.</p>
 
 <p>Use examples as a reference as they cover all of the cases and edgy situations.</p>
 
