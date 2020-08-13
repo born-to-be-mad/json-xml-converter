@@ -1,6 +1,6 @@
 <h2>Description</h2>
 
-<p>In this stage, you will expand XML parsing by adding sub-elements. This would look like this:</p>
+<p>In this stage, you will expand XML parsing by adding sub-elements like this:</p>
 
 <pre><code class="language-xml">&lt;node&gt;
     &lt;child&gt;
@@ -16,13 +16,13 @@
     ...
 &lt;/node&gt;</code></pre>
 
-<p>You’ll need to create a function that will parse and traverse XML document. You don't need to use parsing libraries, you need to write a parser by yourself.</p>
+<p>You need to create a function that will parse and traverse an XML document. You don't need to use parsing libraries, you need to write a parser by yourself.</p>
 
 <p>In the previous stage, you’ve learned how to parse attributes. When you traverse an XML tree, you need to check if an element contains attributes. To do this, you can substring data between opening and closing tags and split every attribute data into keys and values.</p>
 
 <pre><code class="language-xml">&lt;element | attribute1="value1" |  …  | attributeN="valueN" |/&gt;</code></pre>
 
-<p>XML tree with attributes look like this:</p>
+<p>XML tree with attributes looks like this:</p>
 
 <pre><code class="language-xml">&lt;node&gt;
     &lt;child name = "child_name1" type = "child_type1"&gt;
@@ -36,7 +36,7 @@
     &lt;/child&gt;
 &lt;/node&gt;</code></pre>
 
-<p>In every step of XML tree traversal, check subchildren and attributes. Note that elements can be empty or can lack attributes.</p>
+<p>In every step of XML tree traversal, check subchildren and attributes. Note that the elements can be empty or can lack attributes.</p>
 
 <p>In this stage you should improve the program; it should read the XML file from the disk, parse it, and output its contents in this format:</p>
 
@@ -48,14 +48,14 @@ attributeN = valueN</code></pre>
 
 <p>For every element in XML, you should print its hierarchy from the root parent to the direct parent element separated by commas and attribute lists.</p>
 
-<p>If the element can't have value (for example, parent element) you should omit value form output.</p>
+<p>If the element can't have value (e.g. parent element) you should omit value from the output.</p>
 
 <pre><code class="language-no-highlight">Element:
 path = grand_parent, ... , parent
 attributes: [ Only if element contain attributes ]
 attributeN = valueN</code></pre>
 
-<p>Also, you should not rely on new lines, because it's only for better reading by a human. Take a look at the last output example - initial XML file doesn't contain any new lines - everything on a single line although the content is equal to the pre-last example.</p>
+<p>Also, you should not rely on new lines, because they are only there to make the code more readable to a human. Take a look at the last output example: the initial XML file doesn't have any new lines. Everything is presented in a single line although the content is the same as in the last but one example.</p>
 
 <p>You should read from the file named <code class="language-xml">test.txt</code>. If you want to test your program, you should check it on some other file, because the contents of this file will be overwritten during testing and after testing the file will be deleted.</p>
 
@@ -157,8 +157,6 @@ day = "12"
 month = "12"
 year = "2018"</code></pre>
 
-<p> </p>
-
 <p><strong>Example 2:</strong></p>
 
 <p>Input example #2 (file <code class="language-xml">test.txt</code>)</p>
@@ -226,8 +224,6 @@ value = null
 attributes:
 id = "5"
 auth = "auth3"</code></pre>
-
-<p> </p>
 
 <p><strong>Example 3:</strong></p>
 
