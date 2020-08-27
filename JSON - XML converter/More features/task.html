@@ -2,19 +2,19 @@
 
 <p>In this stage, you will parse fully-featured JSON documents. And after that, you will get the fully-featured XML/JSON converter.</p>
 
-<p>There are some little details that you are missing: JSON has arrays, but every item of the array doesn't contain a key value; they just go one after another. To convert this to XML, you need to enclose these elements into <code class="language-json">&lt;element&gt;</code> tag. Also, you can detect an array in the XML if all the subchildren (at least 2, a single child is not an array) have the same name (for instance, <code class="language-json">&lt;transaction&gt;</code> in the example below). An empty JSON array should be converted to an empty string, just like a JSON empty object.  An array inside an array does not have a key (which would be the opening and closing tag in XML) with which you can define this array. To avoid this, the array inside the array should be defined inside the <code class="language-json">&lt;element&gt;</code> tags since every element in an array should be defined inside this tag.</p>
+<p>There are some little details that you are missing: JSON has arrays, but every item of the array doesn't contain a key value; they just go one after another. To convert it to XML, you need to enclose these elements into the <code class="language-json">&lt;element&gt;</code> tag. Also, you can detect an array in the XML if all the subchildren (at least 2, a single child is not an array) have the same name (for instance, <code class="language-json">&lt;transaction&gt;</code> in the example below). An empty JSON array should be converted to an empty string, just like a JSON empty object. An array inside an array does not have a key (which would be the opening and closing tag in XML) with which you can define this array. To avoid this, the array inside the array should be defined inside the <code class="language-json">&lt;element&gt;</code> tags since every element in an array should be defined inside this tag.</p>
 
-<p>Also, don't suppose that a comma should be right after the element, JSON lets you place it after any amount of spaces and new lines. You can see this in the example 3.</p>
+<p>Also, a comma doesn't have to follow the element, JSON lets you place it after any amount of spaces and new lines. You can see this in the example #3.</p>
 
-<p>Other thing is that JSON can contain boolean values: <code class="language-json">true</code> and <code class="language-json">false</code>. During conversion, you should turn them into strings <code class="language-json">"true"</code> and <code class="language-json">"false"</code>.</p>
+<p>Another thing is that JSON can contain boolean values: <code class="language-json">true</code> and <code class="language-json">false</code>. During conversion, you should turn them into strings <code class="language-json">"true"</code> and <code class="language-json">"false"</code>.</p>
 
-<p>Another thing is that XML supports values of attributes enclosed with single quotes, not only double quotes. For example, <code class="language-json">&lt;xml attr="xml"&gt;&lt;/xml&gt;</code> and <code class="language-json">&lt;xml attr='xml'&gt;&lt;/xml&gt;</code> means the same and both valid in XML.</p>
+<p>Also, XML supports values of attributes enclosed with single quotes, not only double quotes. For example, <code class="language-json">&lt;xml attr="xml"&gt;&lt;/xml&gt;</code> and <code class="language-json">&lt;xml attr='xml'&gt;&lt;/xml&gt;</code> mean the same and both of them are valid in XML.</p>
 
-<p>At last, in this stage you should skip any XML header that starts with <code class="language-json">&lt;?</code> and ends with <code class="language-json">?&gt;</code>. There is no need for this in the JSON.</p>
+<p>At last, in this stage, you should skip any XML header that starts with <code class="language-json">&lt;?</code> and ends with <code class="language-json">?&gt;</code>. There is no need for this in JSON.</p>
 
-<p>Use examples as a reference as they cover all of the cases and edgy situations.</p>
+<p>Use examples as a reference as they cover all of the cases and tricky situations mentioned above.</p>
 
-<p>Note that you <strong>do not need</strong> to output JSON or XML in a formatted form. You can print them in one line. Because grader deletes all unnecessary whitespace characters before checking.</p>
+<p>Note that you <strong>do not need</strong> to output JSON or XML in a formatted form. You can print them in one line because the grader deletes all unnecessary whitespace characters before checking.</p>
 
 <p>You should read from the file named <code class="language-json">test.txt</code>. If you want to test your program, you should check it on some other file, because the contents of this file will be overwritten during testing and after testing the file will be deleted.</p>
 

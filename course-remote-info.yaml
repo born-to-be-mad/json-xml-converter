@@ -6,16 +6,22 @@ hyperskill_project:
 stages:
 - id: 329
   step: 5471
+  is_completed: true
 - id: 330
   step: 5472
+  is_completed: false
 - id: 331
   step: 5473
+  is_completed: false
 - id: 332
   step: 5474
+  is_completed: false
 - id: 333
   step: 5475
+  is_completed: false
 - id: 334
   step: 5476
+  is_completed: false
 topics:
   0:
   - title: JSON
@@ -81,10 +87,6 @@ topics:
     theory_id: 7929
   - title: Computer algorithms
     theory_id: 4953
-  - title: Pseudocode basics
-    theory_id: 8228
-  - title: Complex constructions in pseudocode
-    theory_id: 8233
   - title: Introducing the first algorithm
     theory_id: 10336
   - title: The big O notation
