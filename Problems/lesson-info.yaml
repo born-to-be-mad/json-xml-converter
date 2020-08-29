@@ -33,3 +33,4 @@ content:
 - Publication and its subclasses
 - Avoid division by zero
 - Only true or false
+- Safe converting
