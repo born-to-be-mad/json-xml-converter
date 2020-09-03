@@ -35,3 +35,4 @@ content:
 - Only true or false
 - Safe converting
 - Profit
+- Compact strings with AsciiCharSequence
