@@ -38,3 +38,4 @@ content:
 - Compact strings with AsciiCharSequence
 - Fill the declaration
 - Extracting big numbers from a text
+- Extracting words from a text
