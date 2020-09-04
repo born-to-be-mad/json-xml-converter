@@ -36,3 +36,5 @@ content:
 - Safe converting
 - Profit
 - Compact strings with AsciiCharSequence
+- Fill the declaration
+- Extracting big numbers from a text
