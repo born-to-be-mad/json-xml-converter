@@ -1,17 +1,15 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Scanner;
+import java.util.*;
 
 class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        Map<String, Integer> map = new HashMap<>();
 
-        Collection<String> source = new ArrayList<>(Arrays.asList(scanner.nextLine().split("\\s+")));
-        Collection<String> dest = Arrays.asList(scanner.nextLine().split("\\s+"));
+        Arrays.stream(scanner.nextLine().toLowerCase().split(""))
+              .forEach(letter -> map.merge(letter, 1, Integer::sum));
+        Arrays.stream(scanner.nextLine().toLowerCase().split(""))
+              .forEach(letter -> map.merge(letter, -1, Integer::sum));
 
-        boolean result = dest.stream().allMatch(source::remove);
-
-        System.out.println(result ? "You get money" : "You are busted");
+        System.out.println(map.values().stream().mapToInt(Math::abs).sum());
     }
 }
