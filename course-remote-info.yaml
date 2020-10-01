@@ -9,7 +9,7 @@ stages:
   is_completed: true
 - id: 330
   step: 5472
-  is_completed: false
+  is_completed: true
 - id: 331
   step: 5473
   is_completed: false
@@ -135,8 +135,6 @@ topics:
     theory_id: 3624
   - title: Set
     theory_id: 3575
-  - title: Map
-    theory_id: 3558
   - title: Introduction to operating systems
     theory_id: 9704
   - title: Command line overview
@@ -147,6 +145,12 @@ topics:
     theory_id: 3635
   - title: Reading files
     theory_id: 3636
+  - title: 'Hashing: overview'
+    theory_id: 9831
+  - title: Hash table
+    theory_id: 5364
+  - title: Map
+    theory_id: 3558
   - title: Sizes and ranges
     theory_id: 3532
   - title: Type casting
