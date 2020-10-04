@@ -232,7 +232,7 @@ class JsonReader extends Reader {
     Pattern attributes = Pattern.compile(String.format(
         "\\s*\"(?<%s>[^#\"]*)\"\\s*:\\s\"?(?<%s>null|\\d+|[^\"]*)\"?\\s*",
         ATTRIBUTE_NAME, ATTRIBUTE_VALUE));
-    Pattern noAttributes = Pattern.compile(String.format(
+    Pattern noAttributes = Patte"rn.compile(String.format(
         "\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\"?(?<%s>(null|[^\"]*))\"?\\s*}",
         ELEMENT_NAME, CONTENT));
     private final Pattern neverMatchingPattern = Pattern.compile("^@$");
