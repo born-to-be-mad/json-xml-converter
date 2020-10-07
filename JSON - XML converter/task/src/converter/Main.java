@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.String.*;
 import static java.util.stream.Collectors.joining;
 
 public class Main {
@@ -74,31 +75,31 @@ class Node {
     public String toXml() {
         String strOfAttributes = toXmlStr(attributes);
         if (content == null || content.equalsIgnoreCase("null")) {
-            return String.format("<%1$s %2$s />", element, strOfAttributes);
+            return format("<%1$s %2$s />", element, strOfAttributes);
         } else {
-            return String.format("<%1$s %3$s>%2$s</%1$s>", element, content, strOfAttributes);
+            return format("<%1$s %3$s>%2$s</%1$s>", element, content, strOfAttributes);
         }
     }
 
     private String toXmlStr(Map<String, String> attributes) {
         return attributes.entrySet().stream()
-                         .map(entry -> String.format("%s = \"%s\"", entry.getKey().substring(1), entry.getValue()))
+                         .map(entry -> format("%s = \"%s\"", entry.getKey().substring(1), entry.getValue()))
                          .collect(joining(" "));
     }
 
     public String toJson() {
         String contentValue = content == null ? "null" : ("\"" + content + "\"");
         if (attributes.isEmpty()) {
-            return String.format("{\"%1$s\":%2$s}", element, contentValue);
+            return format("{\"%1$s\":%2$s}", element, contentValue);
         } else {
             String strOfAttributes = toJsonStr(attributes);
-            return String.format("{\"%1$s\": {%3$s, \"#%1$s\": %2$s}}", element, contentValue, strOfAttributes);
+            return format("{\"%1$s\": {%3$s, \"#%1$s\": %2$s}}", element, contentValue, strOfAttributes);
         }
     }
 
     private String toJsonStr(Map<String, String> attributes) {
         return attributes.entrySet().stream()
-                         .map(entry -> String.format("\"@%s\" : \"%s\"", entry.getKey(), entry.getValue()))
+                         .map(entry -> format("\"@%s\" : \"%s\"", entry.getKey(), entry.getValue()))
                          .collect(joining(", "));
     }
 
@@ -160,15 +161,15 @@ abstract class Reader {
 
 class XmlReader extends Reader {
     private final Pattern full = Pattern.compile(
-        String.format("<(?<%s>\\w+)(?<%s>.*)>(?<%s>.*)<.*>", ELEMENT_NAME, ATTRIBUTES, CONTENT)
+        format("<(?<%s>\\w+)(?<%s>.*)>(?<%s>.*)<.*>", ELEMENT_NAME, ATTRIBUTES, CONTENT)
     );
 
     private final Pattern empty = Pattern.compile(
-        String.format("<(?<%s>\\w+)(?<%s>.*)/>", ELEMENT_NAME, ATTRIBUTES)
+        format("<(?<%s>\\w+)(?<%s>.*)/>", ELEMENT_NAME, ATTRIBUTES)
     );
 
     private final Pattern attributes = Pattern.compile(
-        String.format("\\s*(?<%s>\\w+)\\s*=\\s*\"(?<%s>\\w+)\"\\s*", ATTRIBUTE_NAME, ATTRIBUTE_VALUE)
+        format("\\s*(?<%s>\\w+)\\s*=\\s*\"(?<%s>\\w+)\"\\s*", ATTRIBUTE_NAME, ATTRIBUTE_VALUE)
     );
 
     private final Pattern neverMatchingPattern = Pattern.compile("^@$");
@@ -223,18 +224,18 @@ class XmlReader extends Reader {
 }
 
 class JsonReader extends Reader {
-    Pattern withAttributesNameAndContent = Pattern.compile(String.format(
-        "\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\\{[\\s\\p{ASCII}]*(\"#.*?\"\\s+:\\s+\"?(?<%s>(null|[^\"]*))\"?)[\\s\\p{ASCII}]*}\\s*}\\s*",
-        ELEMENT_NAME, CONTENT));
-    Pattern withAttributesAttributes = Pattern.compile(String.format(
-        "[\\s\\p{ASCII}]*\\{[\\s\\p{ASCII}]*\\{(?<%s>[\\s\\p{ASCII}]*)}[\\s\\p{ASCII}]*}[\\s\\p{ASCII}]*",
-        ATTRIBUTES));
-    Pattern attributes = Pattern.compile(String.format(
-        "\\s*\"(?<%s>[^#\"]*)\"\\s*:\\s\"?(?<%s>null|\\d+|[^\"]*)\"?\\s*",
-        ATTRIBUTE_NAME, ATTRIBUTE_VALUE));
-    Pattern noAttributes = Patte"rn.compile(String.format(
-        "\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\"?(?<%s>(null|[^\"]*))\"?\\s*}",
-        ELEMENT_NAME, CONTENT));
+    Pattern withAttributesNameAndContent = Pattern.compile(
+        format("\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\\{[\\s\\p{ASCII}]*(\"#.*?\"\\s+:\\s+\"?(?<%s>(null|[^\"]*))\"?)[\\s\\p{ASCII}]*}\\s*}\\s*",
+               ELEMENT_NAME, CONTENT));
+    Pattern withAttributesAttributes = Pattern.compile(
+        format("[\\s\\p{ASCII}]*\\{[\\s\\p{ASCII}]*\\{(?<%s>[\\s\\p{ASCII}]*)}[\\s\\p{ASCII}]*}[\\s\\p{ASCII}]*",
+               ATTRIBUTES));
+    Pattern attributes = Pattern.compile(
+        format("\\s*\"(?<%s>[^#\"]*)\"\\s*:\\s\"?(?<%s>null|\\d+|[^\"]*)\"?\\s*",
+               ATTRIBUTE_NAME, ATTRIBUTE_VALUE));
+    Pattern noAttributes = Pattern.compile(
+        format("\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\"?(?<%s>(null|[^\"]*))\"?\\s*}",
+               ELEMENT_NAME, CONTENT));
     private final Pattern neverMatchingPattern = Pattern.compile("^@$");
 
     private final Matcher nameMatcher;
