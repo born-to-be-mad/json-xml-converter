@@ -1,16 +1,25 @@
 package converter;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public class Main {
 
@@ -18,9 +27,10 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         String input = readInput();
-        Converter converter = new Converter(input);
+        /*Converter converter = new Converter(input);
         String output = converter.isXmlSource ? converter.json : converter.xml;
-        System.out.println(output);
+        System.out.println(output);*/
+        XML xml = new XML(input);
     }
 
     private static String readInput() throws IOException {
@@ -110,6 +120,661 @@ class Node {
                ", content='" + content + '\'' +
                ", attributes=" + attributes +
                '}';
+    }
+}
+
+interface Convertable {
+
+    String convert(String content);
+
+    void logTo(PrintStream out);
+
+    class Factory {
+        public static Convertable of(String input) {
+            return input.charAt(0) == '<' ? new XML2JSON() : new JSON2XML();
+        }
+    }
+}
+
+class JSON2XML implements Convertable {
+    private Pattern objectPattern = Pattern.compile("\\s*\\{\\s*(.*)\\s*\\}\\s*");
+    private Pattern propertyNamePattern = Pattern.compile("\\s*\"([\\w|@|#]*)\"\\s*:\\s*");
+    private Pattern propertyValuePattern = Pattern.compile("\\s*:\\s*\"*(.*)[$|\"?\\s*]");
+    private Pattern propertiesPattern = Pattern.compile("(?!\\B\\{[^\\}]*),(?![^\\{]*\\}\\B)");
+    private StringBuilder builder = new StringBuilder();
+    private PrintStream out;
+
+    @Override
+    public String convert(String content) {
+        var value = readContent(content);
+        var properties = propertiesPattern.split(value);
+        var keyValuePair = readProperty(properties[0]);
+        writeRecursively(keyValuePair[0], keyValuePair[1]);
+        return builder.toString();
+    }
+
+    @Override
+    public void logTo(PrintStream out) {
+        this.out = out;
+    }
+
+    private void println(String fmt, String... params) {
+        if (out != null) {
+            out.printf(fmt + "\n", params);
+        }
+    }
+
+    private String readContent(String content) {
+        var objectMatcher = objectPattern.matcher(content.replaceAll("\\s", ""));
+        objectMatcher.find();
+        return objectMatcher.group(1);
+    }
+
+    private String[] readProperty(String content) {
+        content = !content.strip().endsWith("\"") ? content.strip() + "\n" : content.strip();
+        var keyMatcher = propertyNamePattern.matcher(content);
+        keyMatcher.find();
+        var key = keyMatcher.group(1);
+        var valueMatcher = propertyValuePattern.matcher(content);
+        valueMatcher.find();
+        var value = valueMatcher.group(1).strip();
+        value = "null".equals(value) ? null : value;
+        return new String[]{key, value};
+    }
+
+    private void writeRecursively(String name, String value, String... attributes) {
+        var elementType = ElementType.of(value);
+        switch (elementType) {
+        case LITERAL:
+        case STRING:
+            writeLiteral(name, value, attributes);
+            break;
+        case OBJECT:
+            writeElement(name, value);
+        }
+    }
+
+    private void writeElement(String name, String value) {
+        var properties = propertiesPattern.split(readContent(value));
+        var content = Arrays.stream(properties)
+                            .filter(p -> p.startsWith("\"#"))
+                            .findAny();
+        var attributes = Arrays.stream(properties)
+                               .filter(p -> p.startsWith("\"@"))
+                               .toArray(String[]::new);
+        var elements = Arrays.stream(properties)
+                             .filter(p -> !p.startsWith("\"@") && !p.startsWith("\"#"))
+                             .toArray(String[]::new);
+        if (content.isEmpty() && elements.length == 0) {
+            writeSimpleElement(name, attributes);
+        } else {
+            writeBeginElement(name, attributes);
+            content.ifPresent(s -> writeValue(readProperty(s)[1]));
+            for (var element : elements) {
+                var keyValuePair = readProperty(element);
+                writeRecursively(keyValuePair[0], keyValuePair[1]);
+            }
+            writeEndElement(name);
+        }
+    }
+
+    private void writeLiteral(String name, String value, String... attributes) {
+        if (value == null || value.length() == 0) {
+            writeSimpleElement(name, attributes);
+        } else {
+            writeBeginElement(name, attributes);
+            writeValue(value);
+            writeEndElement(name);
+        }
+    }
+
+    private void writeBeginElement(String elementName, String... attributes) {
+        builder.append("<");
+        builder.append(elementName.startsWith("#") ? elementName.substring(1) : elementName);
+        writeAttributes(attributes);
+        builder.append(">");
+    }
+
+    private void writeEndElement(String elementName) {
+        builder.append("</");
+        builder.append(elementName.startsWith("#") ? elementName.substring(1) : elementName);
+        builder.append(">");
+    }
+
+    private void writeSimpleElement(String elementName, String... attributes) {
+        builder.append("<");
+        builder.append(elementName.startsWith("#") ? elementName.substring(1) : elementName);
+        writeAttributes(attributes);
+        builder.append("/>");
+    }
+
+    private void writeAttributes(String[] attributes) {
+        if (attributes.length > 0) {
+            builder.append(" ");
+            for (var i = 0; i < attributes.length; i++) {
+                String attribute = attributes[i];
+                writeAttribute(attribute);
+                if (i < attributes.length - 1) {
+                    builder.append(" ");
+                }
+            }
+        }
+    }
+
+    private void writeAttribute(String attribute) {
+        var keyValuePair = attribute.replace("\"", "").split(":");
+        builder.append(keyValuePair[0].strip().substring(1));
+        builder.append(" = ");
+        builder.append("\"");
+        builder.append(keyValuePair[1].strip());
+        builder.append("\"");
+    }
+
+    private void writeValue(String value) {
+        builder.append(value == null ? "" : value);
+    }
+
+    private enum ElementType {
+        OBJECT,
+        ARRAY,
+        STRING,
+        LITERAL;
+
+        public static ElementType of(String elementValue) {
+            if (elementValue.charAt(0) == '{') return ElementType.OBJECT;
+            if (elementValue.charAt(0) == '[') return ElementType.ARRAY;
+            if (elementValue.charAt(0) == '"') return ElementType.STRING;
+            return ElementType.LITERAL;
+        }
+    }
+}
+
+class XML2JSON implements Convertable {
+    private Pattern simpleElementPattern = Pattern.compile("\\s*\\<(.*?)\\/\\>\\s*");
+    private Pattern elementNameAndAttributesPattern = Pattern.compile("\\<?\\/?(\\w*)(.*)($|\\>)");
+    private Pattern attributesPartsPattern = Pattern.compile("\\s*(\\w*)\\s*=\\s*\\\"(\\w*)\\\"\\s*");
+    private Pattern elementStartingPattern = Pattern.compile("\\s*\\<\\/?(.*?)\\/?\\>\\s*");
+    private Pattern elementContentPattern = Pattern.compile("\\>(.*)\\<");
+    private Pattern elementsPartsPattern = Pattern.compile("(\\<.*?\\>)|(.+?(?=\\<|$))");
+    private Pattern elementClosingPattern = Pattern.compile("\\<\\/(.*?)\\>|\\<(.*?)\\/\\>");
+    private StringBuilder builder = new StringBuilder();
+    private PrintStream out;
+
+    @Override
+    public String convert(String content) {
+        writeBeginObject();
+        var elements = readElements(content
+                                        .replace("\r", "")
+                                        .replace("\n", ""));
+        var keyValuePair = readElement(elements.get(0));
+        writeRecursively(null,
+                         keyValuePair[0],
+                         keyValuePair[1],
+                         keyValuePair[2]);
+        writeEndObject();
+        return builder.toString();
+    }
+
+    @Override
+    public void logTo(PrintStream out) {
+        this.out = out;
+    }
+
+    private void println(String fmt, String... params) {
+        if (out != null) {
+            out.printf(fmt + "\n", params);
+        }
+    }
+
+    private List<String> readElements(String elements) {
+        var result = new ArrayList<String>();
+        var partsMatcher = elementsPartsPattern.matcher(elements);
+        partsMatcher.find();
+        var parts = Stream.concat(
+            Stream.of(partsMatcher.group().strip()),
+            partsMatcher.results().map(r -> r.group().strip()))
+                          .filter(r -> r.length() > 0)
+                          .collect(toList());
+        var currentElement = new StringBuilder();
+        var currentElementName = "";
+        for (var part : parts) {
+            // If starting element
+            var isOpeningTag = currentElement.length() == 0;
+            if (isOpeningTag) {
+                var elementNameAndAttributesMatcher = elementNameAndAttributesPattern.matcher(part);
+                if (elementNameAndAttributesMatcher.find()) {
+                    currentElementName = elementNameAndAttributesMatcher.group(1);
+                }
+            }
+            // If literal
+            var isLiteral = !part.contains("<");
+            if (isLiteral) {
+                var isInElement = currentElement.length() > 0;
+                if (isInElement) {
+                    currentElement.append(part);
+                } else {
+                    result.add(part);
+                    currentElement.setLength(0);
+                }
+                continue;
+            }
+            // At this point, the part will compose the current element no matter what
+            currentElement.append(part);
+            // If closing element
+            var closingMatcher = elementClosingPattern.matcher(part);
+            var isClosingTag = closingMatcher.find();
+            if (isClosingTag) {
+                var elementNameAndAttributesMatcher = elementNameAndAttributesPattern.matcher(part);
+                if (elementNameAndAttributesMatcher.find()) {
+                    var closingElementName = elementNameAndAttributesMatcher.group(1);
+                    if (currentElementName.equals(closingElementName)) {
+                        result.add(currentElement.toString());
+                        currentElement.setLength(0);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private String[] readElement(String element) {
+        var elementMatcher = elementContentPattern.matcher(element);
+        if (!elementMatcher.find()) {
+            var tagMatcher = simpleElementPattern.matcher(element);
+            tagMatcher.find();
+            var tag = tagMatcher.group(1);
+            var nameAndAttributes = extractNameAndAttributes(tag);
+            return new String[]{nameAndAttributes[0], null, nameAndAttributes[1].strip()};
+        } else {
+            var tagMatcher = elementStartingPattern.matcher(element);
+            tagMatcher.find();
+            var tag = tagMatcher.group(1);
+            var nameAndAttributes = extractNameAndAttributes(tag);
+            var content = extractContent(element);
+            return new String[]{nameAndAttributes[0], content, nameAndAttributes[1].strip()};
+        }
+    }
+
+    private String extractContent(String element) {
+        var contentMatcher = elementContentPattern.matcher(element);
+        contentMatcher.find();
+        var content = contentMatcher.group(1);
+        content = content == null ? "null" : content;
+        return content;
+    }
+
+    private String[] extractNameAndAttributes(String tag) {
+        var nameAndAttributes = new String[2];
+        var nameAndAttributesMatcher = elementNameAndAttributesPattern.matcher(tag);
+        nameAndAttributesMatcher.find();
+        nameAndAttributes[0] = nameAndAttributesMatcher.group(1);
+        nameAndAttributes[1] = nameAndAttributesMatcher.groupCount() == 3
+                               ? nameAndAttributesMatcher.group(2)
+                               : null;
+        return nameAndAttributes;
+    }
+
+    private void writeRecursively(String parentPath, String name, String content, String attributes) {
+        var elementType = ValueType.of(content);
+        if (attributes != null && attributes.length() > 0) {
+            elementType = ValueType.OBJECT;
+        }
+        switch (elementType) {
+        case LITERAL:
+        case STRING:
+            writeString(parentPath, name, content);
+            break;
+        case OBJECT:
+            writeObject(parentPath, name, content, attributes);
+        }
+    }
+
+    private void writeObject(String parentPath, String name, String value, String attributes) {
+        var path = computePath(parentPath, name);
+        logElement(path, name, value, attributes);
+
+        builder.append("\"");
+        builder.append(name);
+        builder.append("\"");
+        builder.append(":");
+        var valueType = ValueType.of(value);
+        var children = valueType == ValueType.LITERAL || valueType == ValueType.STRING
+                       ? List.<String[]>of()
+                       : readElements(value.strip())
+                           .stream()
+                           .map(this::readElement)
+                           .collect(toList());
+        if (children.size() > 0 || (attributes != null && attributes.length() > 0)) {
+            valueType = ValueType.OBJECT;
+        }
+        if (children.size() > 1 && (attributes == null || attributes.length() == 0)) {
+            valueType = ValueType.ARRAY;
+        }
+        if (attributes != null && attributes.length() > 0) {
+            var element = new ArrayList<String[]>();
+            element.add(new String[]{"#" + name, value, null});
+            var attrs = readAttributes(attributes);
+            children = Stream
+                .of(element.stream(), attrs.stream())
+                .reduce(Stream::concat)
+                .get()
+                .collect(toList());
+        }
+        switch (valueType) {
+        case OBJECT:
+            writeBeginObject();
+            break;
+        case ARRAY:
+            writeBeginArray();
+            break;
+        }
+        for (var i = 0; i < children.size(); i++) {
+            if (valueType == ValueType.ARRAY) {
+                writeBeginObject();
+            }
+            var keyValuePair = children.get(i);
+            writeRecursively(path,
+                             keyValuePair[0],
+                             keyValuePair[1],
+                             keyValuePair[2]);
+            if (valueType == ValueType.ARRAY) {
+                writeEndObject();
+            }
+            if (i < children.size() - 1) {
+                builder.append(",");
+            }
+        }
+        switch (valueType) {
+        case OBJECT:
+            writeEndObject();
+            break;
+        case ARRAY:
+            writeEndArray();
+            break;
+        }
+    }
+
+    private void logElement(String path, String name, String value, String attributes) {
+        if (!name.startsWith("#") && !name.startsWith("@")) {
+            println("Element:");
+            println("path = %s", path);
+            var valueType = ValueType.of(value);
+            switch (valueType) {
+            case STRING:
+                println("value = \"%s\"", value);
+                break;
+            case LITERAL:
+                println("value = %s", value);
+                break;
+            }
+            if (attributes != null && attributes.length() > 0) {
+                println("attributes:");
+                var attrs = readAttributes(attributes);
+                for (var attr : attrs) {
+                    println("%s = \"%s\"", attr[0].substring(1), attr[1]);
+                }
+            }
+            println("");
+        }
+    }
+
+    private String computePath(String parent, String name) {
+        return name.startsWith("#")
+               ? parent
+               : parent != null
+                 ? parent + ", " + name
+                 : name;
+    }
+
+    private List<String[]> readAttributes(String attributes) {
+        var result = new ArrayList<String[]>();
+        var matcher = attributesPartsPattern.matcher(attributes);
+        while (matcher.find()) {
+            result.add(new String[]{"@" + matcher.group(1), matcher.group(2), null});
+        }
+        return result;
+    }
+
+    private void writeString(String parentPath, String name, String value) {
+        var path = computePath(parentPath, name);
+        logElement(path, name, value, null);
+
+        builder.append("\"");
+        builder.append(name);
+        builder.append("\"");
+        builder.append(":");
+        if (value == null) {
+            builder.append("null");
+        } else {
+            builder.append("\"");
+            builder.append(value);
+            builder.append("\"");
+        }
+    }
+
+    private void writeBeginObject() {
+        builder.append("{");
+    }
+
+    private void writeEndObject() {
+        builder.append("}");
+    }
+
+    private void writeBeginArray() {
+        builder.append("[");
+    }
+
+    private void writeEndArray() {
+        builder.append("]");
+    }
+
+    private enum ValueType {
+        OBJECT,
+        ARRAY,
+        STRING,
+        LITERAL;
+
+        public static ValueType of(String valueType) {
+            if (valueType == null || valueType.equals("null")) return ValueType.LITERAL;
+            if (valueType.length() == 0 || valueType.charAt(0) == '"') return ValueType.STRING;
+            if (valueType.charAt(0) == '<') return ValueType.OBJECT;
+            return ValueType.STRING;
+        }
+    }
+}
+
+class XML {
+    private String JSONString;
+    private String XMLString;
+
+    public XML(String XMLString) {
+        this.XMLString = cleanXMLString(XMLString);
+        parse(this.XMLString, null);
+    }
+
+    private String cleanXMLString(String XMLString) {
+        String cleanXML;
+        //matches the space between two tags
+        cleanXML = XMLString.replaceAll("(?<=>)\\s+?(?=<)", "");
+        //matches the space(s) before />
+        cleanXML = cleanXML.replaceAll("\\s+?(?=/>)", ""); 
+        return cleanXML;
+    }
+
+    private void parse(String xmlDocument, Deque<String> parents) {
+        //matches <tag>text</tag> or <tag/> or <tag></tag>
+        //matches all the characters between <> or <  />
+        Pattern wholeTagPattern = Pattern.compile("<(\\w+).*?(\\/>|>.*?<\\/\\1>)"); 
+        Matcher wholeTagMatcher = wholeTagPattern.matcher(xmlDocument);
+
+        if (wholeTagMatcher.find()) {
+            int endPosition;
+            Deque<String> parentsStack;
+            do {
+                parentsStack = parents == null ? new ArrayDeque<>() : parents;
+
+                String wholeTag = wholeTagMatcher.group();
+                endPosition = wholeTagMatcher.end(); //the end position of the match. To see if it checked the whole string
+
+                //matches the opening tag (and the key in group 1)
+                Pattern tagPattern = Pattern.compile("(?<=<)(\\w+).*?\\/?(?=>)");
+                Matcher tagMatcher = tagPattern.matcher(wholeTag);
+
+                boolean isFound = tagMatcher.find();
+                String key = tagMatcher.group(1);
+                String tag = tagMatcher.group();
+
+
+                XMLTag xmlTag = new XMLTag(tag, key, wholeTag);
+                xmlTag.setParents(parentsStack);
+                System.out.println(xmlTag.toString());
+
+                if (xmlTag.HasChild()) { //if there are childs inside this tag, recursively parse them.
+                    //Matches the text inside <tag>text</tag>
+                    Pattern textInsideMatchedTagPattern = Pattern.compile("(?<=<" + tag + ">).*?(?=<\\/" + key + ")");
+                    Matcher textInsideMatchedTagMatcher = textInsideMatchedTagPattern.matcher(wholeTag);
+                    textInsideMatchedTagMatcher.find();
+                    parentsStack.offer(key);
+
+                    parse(textInsideMatchedTagMatcher.group(),parentsStack);
+                    parentsStack.pollLast();
+                }
+                wholeTagMatcher.find();
+            } while(endPosition < xmlDocument.length());
+        }
+    }
+}
+
+class XMLTag {
+    private String key; //this is just the key (the one that appears in the </key> tag
+    private String value;
+    private boolean hasChild, hasAttributes;
+    private String XMLString;
+    private String tag; //this is the complete tag, for example <key attr1 = "value1" attr2 = "value2> without the <>
+    private LinkedHashMap<String,String> attributesMap;
+    private Deque<String> parents;
+
+    public XMLTag(String tag, String key, String XMLString) {
+        this.tag = tag;
+        this.hasAttributes = hasAttributes();
+        this.key = key;
+        this.XMLString = XMLString;
+        parseTag();
+    }
+
+    public boolean hasAttributes() {
+        //matches the pattern key attribute1 = "value1" .. attributeN = "valueN" or "value1" .. attributeN = "valueN" /
+        Pattern pattern = Pattern.compile("\\w*?=\\s*?\".*?\"\\s*?\\/?");
+        Matcher matcher = pattern.matcher(this.tag);
+
+        return matcher.find();
+    }
+
+    private void parseTag() {
+        this.hasChild = hasChild();
+
+        if (this.hasChild) {
+            this.value = null;
+        } else {
+            //check if tag is self closing a.k.a <tag/>
+            if (this.XMLString.matches("<.*?\\/>")) {
+                this.value = null;
+            } else {
+                //matches the text in <tag>text</tag>
+                Pattern tagPattern = Pattern.compile("(?<=<" + this.tag + ">).*?(?=<\\/" + this.key + ">)");
+                Matcher tagMatcher = tagPattern.matcher(this.XMLString);
+
+                if (tagMatcher.find()) {
+                    this.value = tagMatcher.group();
+                }else {
+                    this.value = "";
+                }
+            }
+        }
+
+        if (this.hasAttributes()) {
+            Pattern attributePattern = Pattern.compile("\\w*\\s*?=\\s*?\"\\w*?\""); //matches attribute = "value"
+            Matcher attributeMatcher = attributePattern.matcher(this.tag);
+
+            this.attributesMap = new LinkedHashMap<>();
+
+            while (attributeMatcher.find()) {
+                Pattern attributeKeyPattern = Pattern.compile("\\w*(?=\\s*?\\=\\s*?)"); //matches a key followed by =
+                Matcher attributeKeyMatcher = attributeKeyPattern.matcher(attributeMatcher.group());
+
+                attributeKeyMatcher.find();
+                String attributeKey = attributeKeyMatcher.group();
+
+                Pattern attributeValuePattern = Pattern.compile("(?<=\\\")\\w*(?=\\\")"); //matches a word enclosed in ""
+                Matcher attributeValueMatcher = attributeValuePattern.matcher(attributeMatcher.group());
+
+                attributeValueMatcher.find();
+                String attributeValue = attributeValueMatcher.group();
+
+                attributesMap.put(attributeKey, attributeValue);
+            }
+        }
+    }
+
+    private boolean hasChild() {
+        //matches the text in <tag>text</tag> or <tag/> or <tag></tag> whichever comes first.
+        Pattern tagPattern = Pattern.compile("((?<=<" + this.tag + ">).+?(?=<\\/" + this.key + ">)|(?<=<)" + this.tag +
+                                             "(?=\\s*?\\/\\s*?>)|(?<=<)" + this.tag + "(?=><\\/" + this.key + ">))");
+        Matcher tagMatcher = tagPattern.matcher(this.XMLString);
+
+        if (tagMatcher.find()) {
+            Pattern pattern = Pattern.compile("<.*?>"); //matches a tag
+            Matcher matcher = pattern.matcher(tagMatcher.group());
+
+            if (matcher.find()) {
+                return true; //if it finds a tag inside the provided tag, returns true. Else returns false.
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder elementString = new StringBuilder();
+
+        elementString.append("Element:\n");
+        elementString.append("path = ");
+
+        for (String parent : this.parents) {
+            elementString.append(parent);
+            elementString.append(", ");
+        }
+        elementString.append(this.key + "\n");
+
+        if (!this.hasChild) {
+            elementString.append("value = ");
+            if (this.value != null) {
+                elementString.append("\"" + this.value + "\"\n");
+            } else {
+                elementString.append("null\n");
+            }
+        }
+
+        if (this.hasAttributes) {
+            elementString.append("attributes:\n");
+
+            for (String key : attributesMap.keySet()) {
+                elementString.append(key + " = \"" + this.attributesMap.get(key) + "\"\n");
+            }
+        }
+
+        return elementString.toString();
+    }
+
+    public boolean HasChild() {
+        return hasChild;
+    }
+
+    public void setParents(Deque<String> parents) {
+        this.parents = parents;
     }
 }
 
