@@ -599,6 +599,442 @@ files:
         }
     }
   learner_created: false
+- name: src/converter/Main.java
+  visible: true
+  text: "package converter;\n\nimport java.io.IOException;\nimport java.io.PrintStream;\n\
+    import java.nio.file.Files;\nimport java.nio.file.Paths;\nimport java.util.ArrayDeque;\n\
+    import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Collections;\n\
+    import java.util.Deque;\nimport java.util.HashMap;\nimport java.util.LinkedHashMap;\n\
+    import java.util.List;\nimport java.util.Map;\nimport java.util.regex.Matcher;\n\
+    import java.util.regex.Pattern;\nimport java.util.stream.Stream;\n\nimport static\
+    \ java.lang.String.format;\nimport static java.util.stream.Collectors.joining;\n\
+    import static java.util.stream.Collectors.toList;\n\npublic class Main {\n\n \
+    \   private static final String SOURCE_FILE = \"./test.txt\";\n\n    public static\
+    \ void main(String[] args) throws IOException {\n        String input = readInput();\n\
+    \        /*Converter converter = new Converter(input);\n        String output\
+    \ = converter.isXmlSource ? converter.json : converter.xml;\n        System.out.println(output);*/\n\
+    \        XML xml = new XML(input);\n    }\n\n    private static String readInput()\
+    \ throws IOException {\n        return Files.readString(Paths.get(SOURCE_FILE));\n\
+    \    }\n}\n\nclass Converter {\n\n    String json;\n    String xml;\n    boolean\
+    \ isXmlSource;\n\n    public Converter(String input) {\n        String inputNoLineTerminators\
+    \ = input.replaceAll(\"\\\\r\", \"\")\n                                      \
+    \       .replaceAll(\"\\\\n\", \"\");\n        this.isXmlSource = isXml(inputNoLineTerminators);\n\
+    \        parse(inputNoLineTerminators);\n    }\n\n    private static boolean isXml(String\
+    \ input) {\n        return input.trim().charAt(0) == '<';\n    }\n\n    private\
+    \ void parse(String input) {\n        if (isXmlSource) {\n            xml = input;\n\
+    \            json = parseToJson(input);\n        } else {\n            json =\
+    \ input;\n            xml = parseToXml(input);\n        }\n    }\n\n    private\
+    \ String parseToXml(String input) {\n        return new JsonReader(input).toNode().toXml();\n\
+    \    }\n\n    private String parseToJson(String input) {\n        return new XmlReader(input).toNode().toJson();\n\
+    \    }\n}\n\n/**\n * Node that can be represented as JSON/XML string.\n */\nclass\
+    \ Node {\n    String element;\n    String content;\n    Map<String, String> attributes;\n\
+    \n    public String toXml() {\n        String strOfAttributes = toXmlStr(attributes);\n\
+    \        if (content == null || content.equalsIgnoreCase(\"null\")) {\n      \
+    \      return format(\"<%1$s %2$s />\", element, strOfAttributes);\n        }\
+    \ else {\n            return format(\"<%1$s %3$s>%2$s</%1$s>\", element, content,\
+    \ strOfAttributes);\n        }\n    }\n\n    private String toXmlStr(Map<String,\
+    \ String> attributes) {\n        return attributes.entrySet().stream()\n     \
+    \                    .map(entry -> format(\"%s = \\\"%s\\\"\", entry.getKey().substring(1),\
+    \ entry.getValue()))\n                         .collect(joining(\" \"));\n   \
+    \ }\n\n    public String toJson() {\n        String contentValue = content ==\
+    \ null ? \"null\" : (\"\\\"\" + content + \"\\\"\");\n        if (attributes.isEmpty())\
+    \ {\n            return format(\"{\\\"%1$s\\\":%2$s}\", element, contentValue);\n\
+    \        } else {\n            String strOfAttributes = toJsonStr(attributes);\n\
+    \            return format(\"{\\\"%1$s\\\": {%3$s, \\\"#%1$s\\\": %2$s}}\", element,\
+    \ contentValue, strOfAttributes);\n        }\n    }\n\n    private String toJsonStr(Map<String,\
+    \ String> attributes) {\n        return attributes.entrySet().stream()\n     \
+    \                    .map(entry -> format(\"\\\"@%s\\\" : \\\"%s\\\"\", entry.getKey(),\
+    \ entry.getValue()))\n                         .collect(joining(\", \"));\n  \
+    \  }\n\n    @Override\n    public String toString() {\n        return \"Node{\"\
+    \ +\n               \"element='\" + element + '\\'' +\n               \", content='\"\
+    \ + content + '\\'' +\n               \", attributes=\" + attributes +\n     \
+    \          '}';\n    }\n}\n\ninterface Convertable {\n\n    String convert(String\
+    \ content);\n\n    void logTo(PrintStream out);\n\n    class Factory {\n     \
+    \   public static Convertable of(String input) {\n            return input.charAt(0)\
+    \ == '<' ? new XML2JSON() : new JSON2XML();\n        }\n    }\n}\n\nclass JSON2XML\
+    \ implements Convertable {\n    private Pattern objectPattern = Pattern.compile(\"\
+    \\\\s*\\\\{\\\\s*(.*)\\\\s*\\\\}\\\\s*\");\n    private Pattern propertyNamePattern\
+    \ = Pattern.compile(\"\\\\s*\\\"([\\\\w|@|#]*)\\\"\\\\s*:\\\\s*\");\n    private\
+    \ Pattern propertyValuePattern = Pattern.compile(\"\\\\s*:\\\\s*\\\"*(.*)[$|\\\
+    \"?\\\\s*]\");\n    private Pattern propertiesPattern = Pattern.compile(\"(?!\\\
+    \\B\\\\{[^\\\\}]*),(?![^\\\\{]*\\\\}\\\\B)\");\n    private StringBuilder builder\
+    \ = new StringBuilder();\n    private PrintStream out;\n\n    @Override\n    public\
+    \ String convert(String content) {\n        var value = readContent(content);\n\
+    \        var properties = propertiesPattern.split(value);\n        var keyValuePair\
+    \ = readProperty(properties[0]);\n        writeRecursively(keyValuePair[0], keyValuePair[1]);\n\
+    \        return builder.toString();\n    }\n\n    @Override\n    public void logTo(PrintStream\
+    \ out) {\n        this.out = out;\n    }\n\n    private void println(String fmt,\
+    \ String... params) {\n        if (out != null) {\n            out.printf(fmt\
+    \ + \"\\n\", params);\n        }\n    }\n\n    private String readContent(String\
+    \ content) {\n        var objectMatcher = objectPattern.matcher(content.replaceAll(\"\
+    \\\\s\", \"\"));\n        objectMatcher.find();\n        return objectMatcher.group(1);\n\
+    \    }\n\n    private String[] readProperty(String content) {\n        content\
+    \ = !content.strip().endsWith(\"\\\"\") ? content.strip() + \"\\n\" : content.strip();\n\
+    \        var keyMatcher = propertyNamePattern.matcher(content);\n        keyMatcher.find();\n\
+    \        var key = keyMatcher.group(1);\n        var valueMatcher = propertyValuePattern.matcher(content);\n\
+    \        valueMatcher.find();\n        var value = valueMatcher.group(1).strip();\n\
+    \        value = \"null\".equals(value) ? null : value;\n        return new String[]{key,\
+    \ value};\n    }\n\n    private void writeRecursively(String name, String value,\
+    \ String... attributes) {\n        var elementType = ElementType.of(value);\n\
+    \        switch (elementType) {\n        case LITERAL:\n        case STRING:\n\
+    \            writeLiteral(name, value, attributes);\n            break;\n    \
+    \    case OBJECT:\n            writeElement(name, value);\n        }\n    }\n\n\
+    \    private void writeElement(String name, String value) {\n        var properties\
+    \ = propertiesPattern.split(readContent(value));\n        var content = Arrays.stream(properties)\n\
+    \                            .filter(p -> p.startsWith(\"\\\"#\"))\n         \
+    \                   .findAny();\n        var attributes = Arrays.stream(properties)\n\
+    \                               .filter(p -> p.startsWith(\"\\\"@\"))\n      \
+    \                         .toArray(String[]::new);\n        var elements = Arrays.stream(properties)\n\
+    \                             .filter(p -> !p.startsWith(\"\\\"@\") && !p.startsWith(\"\
+    \\\"#\"))\n                             .toArray(String[]::new);\n        if (content.isEmpty()\
+    \ && elements.length == 0) {\n            writeSimpleElement(name, attributes);\n\
+    \        } else {\n            writeBeginElement(name, attributes);\n        \
+    \    content.ifPresent(s -> writeValue(readProperty(s)[1]));\n            for\
+    \ (var element : elements) {\n                var keyValuePair = readProperty(element);\n\
+    \                writeRecursively(keyValuePair[0], keyValuePair[1]);\n       \
+    \     }\n            writeEndElement(name);\n        }\n    }\n\n    private void\
+    \ writeLiteral(String name, String value, String... attributes) {\n        if\
+    \ (value == null || value.length() == 0) {\n            writeSimpleElement(name,\
+    \ attributes);\n        } else {\n            writeBeginElement(name, attributes);\n\
+    \            writeValue(value);\n            writeEndElement(name);\n        }\n\
+    \    }\n\n    private void writeBeginElement(String elementName, String... attributes)\
+    \ {\n        builder.append(\"<\");\n        builder.append(elementName.startsWith(\"\
+    #\") ? elementName.substring(1) : elementName);\n        writeAttributes(attributes);\n\
+    \        builder.append(\">\");\n    }\n\n    private void writeEndElement(String\
+    \ elementName) {\n        builder.append(\"</\");\n        builder.append(elementName.startsWith(\"\
+    #\") ? elementName.substring(1) : elementName);\n        builder.append(\">\"\
+    );\n    }\n\n    private void writeSimpleElement(String elementName, String...\
+    \ attributes) {\n        builder.append(\"<\");\n        builder.append(elementName.startsWith(\"\
+    #\") ? elementName.substring(1) : elementName);\n        writeAttributes(attributes);\n\
+    \        builder.append(\"/>\");\n    }\n\n    private void writeAttributes(String[]\
+    \ attributes) {\n        if (attributes.length > 0) {\n            builder.append(\"\
+    \ \");\n            for (var i = 0; i < attributes.length; i++) {\n          \
+    \      String attribute = attributes[i];\n                writeAttribute(attribute);\n\
+    \                if (i < attributes.length - 1) {\n                    builder.append(\"\
+    \ \");\n                }\n            }\n        }\n    }\n\n    private void\
+    \ writeAttribute(String attribute) {\n        var keyValuePair = attribute.replace(\"\
+    \\\"\", \"\").split(\":\");\n        builder.append(keyValuePair[0].strip().substring(1));\n\
+    \        builder.append(\" = \");\n        builder.append(\"\\\"\");\n       \
+    \ builder.append(keyValuePair[1].strip());\n        builder.append(\"\\\"\");\n\
+    \    }\n\n    private void writeValue(String value) {\n        builder.append(value\
+    \ == null ? \"\" : value);\n    }\n\n    private enum ElementType {\n        OBJECT,\n\
+    \        ARRAY,\n        STRING,\n        LITERAL;\n\n        public static ElementType\
+    \ of(String elementValue) {\n            if (elementValue.charAt(0) == '{') return\
+    \ ElementType.OBJECT;\n            if (elementValue.charAt(0) == '[') return ElementType.ARRAY;\n\
+    \            if (elementValue.charAt(0) == '\"') return ElementType.STRING;\n\
+    \            return ElementType.LITERAL;\n        }\n    }\n}\n\nclass XML2JSON\
+    \ implements Convertable {\n    private Pattern simpleElementPattern = Pattern.compile(\"\
+    \\\\s*\\\\<(.*?)\\\\/\\\\>\\\\s*\");\n    private Pattern elementNameAndAttributesPattern\
+    \ = Pattern.compile(\"\\\\<?\\\\/?(\\\\w*)(.*)($|\\\\>)\");\n    private Pattern\
+    \ attributesPartsPattern = Pattern.compile(\"\\\\s*(\\\\w*)\\\\s*=\\\\s*\\\\\\\
+    \"(\\\\w*)\\\\\\\"\\\\s*\");\n    private Pattern elementStartingPattern = Pattern.compile(\"\
+    \\\\s*\\\\<\\\\/?(.*?)\\\\/?\\\\>\\\\s*\");\n    private Pattern elementContentPattern\
+    \ = Pattern.compile(\"\\\\>(.*)\\\\<\");\n    private Pattern elementsPartsPattern\
+    \ = Pattern.compile(\"(\\\\<.*?\\\\>)|(.+?(?=\\\\<|$))\");\n    private Pattern\
+    \ elementClosingPattern = Pattern.compile(\"\\\\<\\\\/(.*?)\\\\>|\\\\<(.*?)\\\\\
+    /\\\\>\");\n    private StringBuilder builder = new StringBuilder();\n    private\
+    \ PrintStream out;\n\n    @Override\n    public String convert(String content)\
+    \ {\n        writeBeginObject();\n        var elements = readElements(content\n\
+    \                                        .replace(\"\\r\", \"\")\n           \
+    \                             .replace(\"\\n\", \"\"));\n        var keyValuePair\
+    \ = readElement(elements.get(0));\n        writeRecursively(null,\n          \
+    \               keyValuePair[0],\n                         keyValuePair[1],\n\
+    \                         keyValuePair[2]);\n        writeEndObject();\n     \
+    \   return builder.toString();\n    }\n\n    @Override\n    public void logTo(PrintStream\
+    \ out) {\n        this.out = out;\n    }\n\n    private void println(String fmt,\
+    \ String... params) {\n        if (out != null) {\n            out.printf(fmt\
+    \ + \"\\n\", params);\n        }\n    }\n\n    private List<String> readElements(String\
+    \ elements) {\n        var result = new ArrayList<String>();\n        var partsMatcher\
+    \ = elementsPartsPattern.matcher(elements);\n        partsMatcher.find();\n  \
+    \      var parts = Stream.concat(\n            Stream.of(partsMatcher.group().strip()),\n\
+    \            partsMatcher.results().map(r -> r.group().strip()))\n           \
+    \               .filter(r -> r.length() > 0)\n                          .collect(toList());\n\
+    \        var currentElement = new StringBuilder();\n        var currentElementName\
+    \ = \"\";\n        for (var part : parts) {\n            // If starting element\n\
+    \            var isOpeningTag = currentElement.length() == 0;\n            if\
+    \ (isOpeningTag) {\n                var elementNameAndAttributesMatcher = elementNameAndAttributesPattern.matcher(part);\n\
+    \                if (elementNameAndAttributesMatcher.find()) {\n             \
+    \       currentElementName = elementNameAndAttributesMatcher.group(1);\n     \
+    \           }\n            }\n            // If literal\n            var isLiteral\
+    \ = !part.contains(\"<\");\n            if (isLiteral) {\n                var\
+    \ isInElement = currentElement.length() > 0;\n                if (isInElement)\
+    \ {\n                    currentElement.append(part);\n                } else\
+    \ {\n                    result.add(part);\n                    currentElement.setLength(0);\n\
+    \                }\n                continue;\n            }\n            // At\
+    \ this point, the part will compose the current element no matter what\n     \
+    \       currentElement.append(part);\n            // If closing element\n    \
+    \        var closingMatcher = elementClosingPattern.matcher(part);\n         \
+    \   var isClosingTag = closingMatcher.find();\n            if (isClosingTag) {\n\
+    \                var elementNameAndAttributesMatcher = elementNameAndAttributesPattern.matcher(part);\n\
+    \                if (elementNameAndAttributesMatcher.find()) {\n             \
+    \       var closingElementName = elementNameAndAttributesMatcher.group(1);\n \
+    \                   if (currentElementName.equals(closingElementName)) {\n   \
+    \                     result.add(currentElement.toString());\n               \
+    \         currentElement.setLength(0);\n                    }\n              \
+    \  }\n            }\n        }\n        return result;\n    }\n\n    private String[]\
+    \ readElement(String element) {\n        var elementMatcher = elementContentPattern.matcher(element);\n\
+    \        if (!elementMatcher.find()) {\n            var tagMatcher = simpleElementPattern.matcher(element);\n\
+    \            tagMatcher.find();\n            var tag = tagMatcher.group(1);\n\
+    \            var nameAndAttributes = extractNameAndAttributes(tag);\n        \
+    \    return new String[]{nameAndAttributes[0], null, nameAndAttributes[1].strip()};\n\
+    \        } else {\n            var tagMatcher = elementStartingPattern.matcher(element);\n\
+    \            tagMatcher.find();\n            var tag = tagMatcher.group(1);\n\
+    \            var nameAndAttributes = extractNameAndAttributes(tag);\n        \
+    \    var content = extractContent(element);\n            return new String[]{nameAndAttributes[0],\
+    \ content, nameAndAttributes[1].strip()};\n        }\n    }\n\n    private String\
+    \ extractContent(String element) {\n        var contentMatcher = elementContentPattern.matcher(element);\n\
+    \        contentMatcher.find();\n        var content = contentMatcher.group(1);\n\
+    \        content = content == null ? \"null\" : content;\n        return content;\n\
+    \    }\n\n    private String[] extractNameAndAttributes(String tag) {\n      \
+    \  var nameAndAttributes = new String[2];\n        var nameAndAttributesMatcher\
+    \ = elementNameAndAttributesPattern.matcher(tag);\n        nameAndAttributesMatcher.find();\n\
+    \        nameAndAttributes[0] = nameAndAttributesMatcher.group(1);\n        nameAndAttributes[1]\
+    \ = nameAndAttributesMatcher.groupCount() == 3\n                             \
+    \  ? nameAndAttributesMatcher.group(2)\n                               : null;\n\
+    \        return nameAndAttributes;\n    }\n\n    private void writeRecursively(String\
+    \ parentPath, String name, String content, String attributes) {\n        var elementType\
+    \ = ValueType.of(content);\n        if (attributes != null && attributes.length()\
+    \ > 0) {\n            elementType = ValueType.OBJECT;\n        }\n        switch\
+    \ (elementType) {\n        case LITERAL:\n        case STRING:\n            writeString(parentPath,\
+    \ name, content);\n            break;\n        case OBJECT:\n            writeObject(parentPath,\
+    \ name, content, attributes);\n        }\n    }\n\n    private void writeObject(String\
+    \ parentPath, String name, String value, String attributes) {\n        var path\
+    \ = computePath(parentPath, name);\n        logElement(path, name, value, attributes);\n\
+    \n        builder.append(\"\\\"\");\n        builder.append(name);\n        builder.append(\"\
+    \\\"\");\n        builder.append(\":\");\n        var valueType = ValueType.of(value);\n\
+    \        var children = valueType == ValueType.LITERAL || valueType == ValueType.STRING\n\
+    \                       ? List.<String[]>of()\n                       : readElements(value.strip())\n\
+    \                           .stream()\n                           .map(this::readElement)\n\
+    \                           .collect(toList());\n        if (children.size() >\
+    \ 0 || (attributes != null && attributes.length() > 0)) {\n            valueType\
+    \ = ValueType.OBJECT;\n        }\n        if (children.size() > 1 && (attributes\
+    \ == null || attributes.length() == 0)) {\n            valueType = ValueType.ARRAY;\n\
+    \        }\n        if (attributes != null && attributes.length() > 0) {\n   \
+    \         var element = new ArrayList<String[]>();\n            element.add(new\
+    \ String[]{\"#\" + name, value, null});\n            var attrs = readAttributes(attributes);\n\
+    \            children = Stream\n                .of(element.stream(), attrs.stream())\n\
+    \                .reduce(Stream::concat)\n                .get()\n           \
+    \     .collect(toList());\n        }\n        switch (valueType) {\n        case\
+    \ OBJECT:\n            writeBeginObject();\n            break;\n        case ARRAY:\n\
+    \            writeBeginArray();\n            break;\n        }\n        for (var\
+    \ i = 0; i < children.size(); i++) {\n            if (valueType == ValueType.ARRAY)\
+    \ {\n                writeBeginObject();\n            }\n            var keyValuePair\
+    \ = children.get(i);\n            writeRecursively(path,\n                   \
+    \          keyValuePair[0],\n                             keyValuePair[1],\n \
+    \                            keyValuePair[2]);\n            if (valueType == ValueType.ARRAY)\
+    \ {\n                writeEndObject();\n            }\n            if (i < children.size()\
+    \ - 1) {\n                builder.append(\",\");\n            }\n        }\n \
+    \       switch (valueType) {\n        case OBJECT:\n            writeEndObject();\n\
+    \            break;\n        case ARRAY:\n            writeEndArray();\n     \
+    \       break;\n        }\n    }\n\n    private void logElement(String path, String\
+    \ name, String value, String attributes) {\n        if (!name.startsWith(\"#\"\
+    ) && !name.startsWith(\"@\")) {\n            println(\"Element:\");\n        \
+    \    println(\"path = %s\", path);\n            var valueType = ValueType.of(value);\n\
+    \            switch (valueType) {\n            case STRING:\n                println(\"\
+    value = \\\"%s\\\"\", value);\n                break;\n            case LITERAL:\n\
+    \                println(\"value = %s\", value);\n                break;\n   \
+    \         }\n            if (attributes != null && attributes.length() > 0) {\n\
+    \                println(\"attributes:\");\n                var attrs = readAttributes(attributes);\n\
+    \                for (var attr : attrs) {\n                    println(\"%s =\
+    \ \\\"%s\\\"\", attr[0].substring(1), attr[1]);\n                }\n         \
+    \   }\n            println(\"\");\n        }\n    }\n\n    private String computePath(String\
+    \ parent, String name) {\n        return name.startsWith(\"#\")\n            \
+    \   ? parent\n               : parent != null\n                 ? parent + \"\
+    , \" + name\n                 : name;\n    }\n\n    private List<String[]> readAttributes(String\
+    \ attributes) {\n        var result = new ArrayList<String[]>();\n        var\
+    \ matcher = attributesPartsPattern.matcher(attributes);\n        while (matcher.find())\
+    \ {\n            result.add(new String[]{\"@\" + matcher.group(1), matcher.group(2),\
+    \ null});\n        }\n        return result;\n    }\n\n    private void writeString(String\
+    \ parentPath, String name, String value) {\n        var path = computePath(parentPath,\
+    \ name);\n        logElement(path, name, value, null);\n\n        builder.append(\"\
+    \\\"\");\n        builder.append(name);\n        builder.append(\"\\\"\");\n \
+    \       builder.append(\":\");\n        if (value == null) {\n            builder.append(\"\
+    null\");\n        } else {\n            builder.append(\"\\\"\");\n          \
+    \  builder.append(value);\n            builder.append(\"\\\"\");\n        }\n\
+    \    }\n\n    private void writeBeginObject() {\n        builder.append(\"{\"\
+    );\n    }\n\n    private void writeEndObject() {\n        builder.append(\"}\"\
+    );\n    }\n\n    private void writeBeginArray() {\n        builder.append(\"[\"\
+    );\n    }\n\n    private void writeEndArray() {\n        builder.append(\"]\"\
+    );\n    }\n\n    private enum ValueType {\n        OBJECT,\n        ARRAY,\n \
+    \       STRING,\n        LITERAL;\n\n        public static ValueType of(String\
+    \ valueType) {\n            if (valueType == null || valueType.equals(\"null\"\
+    )) return ValueType.LITERAL;\n            if (valueType.length() == 0 || valueType.charAt(0)\
+    \ == '\"') return ValueType.STRING;\n            if (valueType.charAt(0) == '<')\
+    \ return ValueType.OBJECT;\n            return ValueType.STRING;\n        }\n\
+    \    }\n}\n\nclass XML {\n    private String JSONString;\n    private String XMLString;\n\
+    \n    public XML(String XMLString) {\n        this.XMLString = cleanXMLString(XMLString);\n\
+    \        parse(this.XMLString, null);\n    }\n\n    private String cleanXMLString(String\
+    \ XMLString) {\n        String cleanXML;\n        //matches the space between\
+    \ two tags\n        cleanXML = XMLString.replaceAll(\"(?<=>)\\\\s+?(?=<)\", \"\
+    \");\n        //matches the space(s) before />\n        cleanXML = cleanXML.replaceAll(\"\
+    \\\\s+?(?=/>)\", \"\"); \n        return cleanXML;\n    }\n\n    private void\
+    \ parse(String xmlDocument, Deque<String> parents) {\n        //matches <tag>text</tag>\
+    \ or <tag/> or <tag></tag>\n        //matches all the characters between <> or\
+    \ <  />\n        Pattern wholeTagPattern = Pattern.compile(\"<(\\\\w+).*?(\\\\\
+    />|>.*?<\\\\/\\\\1>)\"); \n        Matcher wholeTagMatcher = wholeTagPattern.matcher(xmlDocument);\n\
+    \n        if (wholeTagMatcher.find()) {\n            int endPosition;\n      \
+    \      Deque<String> parentsStack;\n            do {\n                parentsStack\
+    \ = parents == null ? new ArrayDeque<>() : parents;\n\n                String\
+    \ wholeTag = wholeTagMatcher.group();\n                endPosition = wholeTagMatcher.end();\
+    \ //the end position of the match. To see if it checked the whole string\n\n \
+    \               //matches the opening tag (and the key in group 1)\n         \
+    \       Pattern tagPattern = Pattern.compile(\"(?<=<)(\\\\w+).*?\\\\/?(?=>)\"\
+    );\n                Matcher tagMatcher = tagPattern.matcher(wholeTag);\n\n   \
+    \             boolean isFound = tagMatcher.find();\n                String key\
+    \ = tagMatcher.group(1);\n                String tag = tagMatcher.group();\n\n\
+    \n                XMLTag xmlTag = new XMLTag(tag, key, wholeTag);\n          \
+    \      xmlTag.setParents(parentsStack);\n                System.out.println(xmlTag.toString());\n\
+    \n                if (xmlTag.HasChild()) { //if there are childs inside this tag,\
+    \ recursively parse them.\n                    //Matches the text inside <tag>text</tag>\n\
+    \                    Pattern textInsideMatchedTagPattern = Pattern.compile(\"\
+    (?<=<\" + tag + \">).*?(?=<\\\\/\" + key + \")\");\n                    Matcher\
+    \ textInsideMatchedTagMatcher = textInsideMatchedTagPattern.matcher(wholeTag);\n\
+    \                    textInsideMatchedTagMatcher.find();\n                   \
+    \ parentsStack.offer(key);\n\n                    parse(textInsideMatchedTagMatcher.group(),parentsStack);\n\
+    \                    parentsStack.pollLast();\n                }\n           \
+    \     wholeTagMatcher.find();\n            } while(endPosition < xmlDocument.length());\n\
+    \        }\n    }\n}\n\nclass XMLTag {\n    private String key; //this is just\
+    \ the key (the one that appears in the </key> tag\n    private String value;\n\
+    \    private boolean hasChild, hasAttributes;\n    private String XMLString;\n\
+    \    private String tag; //this is the complete tag, for example <key attr1 =\
+    \ \"value1\" attr2 = \"value2> without the <>\n    private LinkedHashMap<String,String>\
+    \ attributesMap;\n    private Deque<String> parents;\n\n    public XMLTag(String\
+    \ tag, String key, String XMLString) {\n        this.tag = tag;\n        this.hasAttributes\
+    \ = hasAttributes();\n        this.key = key;\n        this.XMLString = XMLString;\n\
+    \        parseTag();\n    }\n\n    public boolean hasAttributes() {\n        //matches\
+    \ the pattern key attribute1 = \"value1\" .. attributeN = \"valueN\" or \"value1\"\
+    \ .. attributeN = \"valueN\" /\n        Pattern pattern = Pattern.compile(\"\\\
+    \\w*?=\\\\s*?\\\".*?\\\"\\\\s*?\\\\/?\");\n        Matcher matcher = pattern.matcher(this.tag);\n\
+    \n        return matcher.find();\n    }\n\n    private void parseTag() {\n   \
+    \     this.hasChild = hasChild();\n\n        if (this.hasChild) {\n          \
+    \  this.value = null;\n        } else {\n            //check if tag is self closing\
+    \ a.k.a <tag/>\n            if (this.XMLString.matches(\"<.*?\\\\/>\")) {\n  \
+    \              this.value = null;\n            } else {\n                //matches\
+    \ the text in <tag>text</tag>\n                Pattern tagPattern = Pattern.compile(\"\
+    (?<=<\" + this.tag + \">).*?(?=<\\\\/\" + this.key + \">)\");\n              \
+    \  Matcher tagMatcher = tagPattern.matcher(this.XMLString);\n\n              \
+    \  if (tagMatcher.find()) {\n                    this.value = tagMatcher.group();\n\
+    \                }else {\n                    this.value = \"\";\n           \
+    \     }\n            }\n        }\n\n        if (this.hasAttributes()) {\n   \
+    \         Pattern attributePattern = Pattern.compile(\"\\\\w*\\\\s*?=\\\\s*?\\\
+    \"\\\\w*?\\\"\"); //matches attribute = \"value\"\n            Matcher attributeMatcher\
+    \ = attributePattern.matcher(this.tag);\n\n            this.attributesMap = new\
+    \ LinkedHashMap<>();\n\n            while (attributeMatcher.find()) {\n      \
+    \          Pattern attributeKeyPattern = Pattern.compile(\"\\\\w*(?=\\\\s*?\\\\\
+    =\\\\s*?)\"); //matches a key followed by =\n                Matcher attributeKeyMatcher\
+    \ = attributeKeyPattern.matcher(attributeMatcher.group());\n\n               \
+    \ attributeKeyMatcher.find();\n                String attributeKey = attributeKeyMatcher.group();\n\
+    \n                Pattern attributeValuePattern = Pattern.compile(\"(?<=\\\\\\\
+    \")\\\\w*(?=\\\\\\\")\"); //matches a word enclosed in \"\"\n                Matcher\
+    \ attributeValueMatcher = attributeValuePattern.matcher(attributeMatcher.group());\n\
+    \n                attributeValueMatcher.find();\n                String attributeValue\
+    \ = attributeValueMatcher.group();\n\n                attributesMap.put(attributeKey,\
+    \ attributeValue);\n            }\n        }\n    }\n\n    private boolean hasChild()\
+    \ {\n        //matches the text in <tag>text</tag> or <tag/> or <tag></tag> whichever\
+    \ comes first.\n        Pattern tagPattern = Pattern.compile(\"((?<=<\" + this.tag\
+    \ + \">).+?(?=<\\\\/\" + this.key + \">)|(?<=<)\" + this.tag +\n             \
+    \                                \"(?=\\\\s*?\\\\/\\\\s*?>)|(?<=<)\" + this.tag\
+    \ + \"(?=><\\\\/\" + this.key + \">))\");\n        Matcher tagMatcher = tagPattern.matcher(this.XMLString);\n\
+    \n        if (tagMatcher.find()) {\n            Pattern pattern = Pattern.compile(\"\
+    <.*?>\"); //matches a tag\n            Matcher matcher = pattern.matcher(tagMatcher.group());\n\
+    \n            if (matcher.find()) {\n                return true; //if it finds\
+    \ a tag inside the provided tag, returns true. Else returns false.\n         \
+    \   } else {\n                return false;\n            }\n        } else {\n\
+    \            return false;\n        }\n    }\n\n    @Override\n    public String\
+    \ toString() {\n        StringBuilder elementString = new StringBuilder();\n\n\
+    \        elementString.append(\"Element:\\n\");\n        elementString.append(\"\
+    path = \");\n\n        for (String parent : this.parents) {\n            elementString.append(parent);\n\
+    \            elementString.append(\", \");\n        }\n        elementString.append(this.key\
+    \ + \"\\n\");\n\n        if (!this.hasChild) {\n            elementString.append(\"\
+    value = \");\n            if (this.value != null) {\n                elementString.append(\"\
+    \\\"\" + this.value + \"\\\"\\n\");\n            } else {\n                elementString.append(\"\
+    null\\n\");\n            }\n        }\n\n        if (this.hasAttributes) {\n \
+    \           elementString.append(\"attributes:\\n\");\n\n            for (String\
+    \ key : attributesMap.keySet()) {\n                elementString.append(key +\
+    \ \" = \\\"\" + this.attributesMap.get(key) + \"\\\"\\n\");\n            }\n \
+    \       }\n\n        return elementString.toString();\n    }\n\n    public boolean\
+    \ HasChild() {\n        return hasChild;\n    }\n\n    public void setParents(Deque<String>\
+    \ parents) {\n        this.parents = parents;\n    }\n}\n\nabstract class Reader\
+    \ {\n    static final String ELEMENT_NAME = \"elementName\";\n    static final\
+    \ String ATTRIBUTES = \"attributes\";\n    static final String CONTENT = \"content\"\
+    ;\n    static final String ATTRIBUTE_NAME = \"attributeName\";\n    static final\
+    \ String ATTRIBUTE_VALUE = \"attributeValue\";\n\n    protected final String input;\n\
+    \n    protected Reader(String input) {\n        this.input = input;\n    }\n\n\
+    \    public Node toNode() {\n        Node node = new Node();\n        node.element\
+    \ = getNodeElementName().trim();\n        node.content = getNodeContent() == null\
+    \ ? null : getNodeContent().trim();\n        node.attributes = extractAttributes(getNodeAttributes());\n\
+    \        return node;\n    }\n\n    protected abstract String getNodeElementName();\n\
+    \n    protected abstract String getNodeContent();\n\n    protected abstract String\
+    \ getNodeAttributes();\n\n    protected abstract Pattern getAttributePairsPattern();\n\
+    \n    private Map<String, String> extractAttributes(String strOfAttributes) {\n\
+    \        if (strOfAttributes == null || strOfAttributes.isBlank()) {\n       \
+    \     return Collections.emptyMap();\n        }\n        return parseAttributes(strOfAttributes);\n\
+    \    }\n\n    private Map<String, String> parseAttributes(String strOfAttributes)\
+    \ {\n        Map<String, String> attributes = new HashMap<>();\n        Matcher\
+    \ matcher = getAttributePairsPattern().matcher(strOfAttributes);\n        while\
+    \ (matcher.find()) {\n            attributes.put(matcher.group(ATTRIBUTE_NAME).trim(),\
+    \ matcher.group(ATTRIBUTE_VALUE).trim());\n        }\n        return attributes;\n\
+    \    }\n}\n\nclass XmlReader extends Reader {\n    private final Pattern full\
+    \ = Pattern.compile(\n        format(\"<(?<%s>\\\\w+)(?<%s>.*)>(?<%s>.*)<.*>\"\
+    , ELEMENT_NAME, ATTRIBUTES, CONTENT)\n    );\n\n    private final Pattern empty\
+    \ = Pattern.compile(\n        format(\"<(?<%s>\\\\w+)(?<%s>.*)/>\", ELEMENT_NAME,\
+    \ ATTRIBUTES)\n    );\n\n    private final Pattern attributes = Pattern.compile(\n\
+    \        format(\"\\\\s*(?<%s>\\\\w+)\\\\s*=\\\\s*\\\"(?<%s>\\\\w+)\\\"\\\\s*\"\
+    , ATTRIBUTE_NAME, ATTRIBUTE_VALUE)\n    );\n\n    private final Pattern neverMatchingPattern\
+    \ = Pattern.compile(\"^@$\");\n\n    private final Matcher nameMatcher;\n    private\
+    \ final Matcher contentMatcher;\n    private final Matcher attributeMatcher;\n\
+    \n    public XmlReader(String xmlInput) {\n        super(xmlInput);\n        boolean\
+    \ isFullNode = isFullNode(xmlInput);\n        this.nameMatcher = determineElementNameMatcher(isFullNode);\n\
+    \        this.contentMatcher = determineContentMatcher(isFullNode);\n        this.attributeMatcher\
+    \ = determineAttributeMatcher(isFullNode);\n    }\n\n    private boolean isFullNode(String\
+    \ xml) {\n        return full.matcher(xml).matches();\n    }\n\n    private Matcher\
+    \ determineElementNameMatcher(boolean isFullNode) {\n        return isFullNode\
+    \ ? full.matcher(input) : empty.matcher(input);\n    }\n\n    private Matcher\
+    \ determineContentMatcher(boolean isFullNode) {\n        return isFullNode ? full.matcher(input)\
+    \ : neverMatchingPattern.matcher(input);\n    }\n\n    private Matcher determineAttributeMatcher(boolean\
+    \ isFullNode) {\n        return isFullNode ? full.matcher(input) : empty.matcher(input);\n\
+    \    }\n\n    @Override\n    protected String getNodeElementName() {\n       \
+    \ return nameMatcher.matches() ? nameMatcher.group(ELEMENT_NAME) : null;\n   \
+    \ }\n\n    @Override\n    protected String getNodeContent() {\n        return\
+    \ contentMatcher.matches() ? contentMatcher.group(CONTENT) : null;\n    }\n\n\
+    \    @Override\n    protected String getNodeAttributes() {\n        return attributeMatcher.matches()\
+    \ ? attributeMatcher.group(ATTRIBUTES) : null;\n    }\n\n    @Override\n    protected\
+    \ Pattern getAttributePairsPattern() {\n        return attributes;\n    }\n}\n\
+    \nclass JsonReader extends Reader {\n    Pattern withAttributesNameAndContent\
+    \ = Pattern.compile(\n        format(\"\\\\{\\\\s*\\\"(?<%s>\\\\w+)\\\"\\\\s*:\\\
+    \\s*\\\\{[\\\\s\\\\p{ASCII}]*(\\\"#.*?\\\"\\\\s+:\\\\s+\\\"?(?<%s>(null|[^\\\"\
+    ]*))\\\"?)[\\\\s\\\\p{ASCII}]*}\\\\s*}\\\\s*\",\n               ELEMENT_NAME,\
+    \ CONTENT));\n    Pattern withAttributesAttributes = Pattern.compile(\n      \
+    \  format(\"[\\\\s\\\\p{ASCII}]*\\\\{[\\\\s\\\\p{ASCII}]*\\\\{(?<%s>[\\\\s\\\\\
+    p{ASCII}]*)}[\\\\s\\\\p{ASCII}]*}[\\\\s\\\\p{ASCII}]*\",\n               ATTRIBUTES));\n\
+    \    Pattern attributes = Pattern.compile(\n        format(\"\\\\s*\\\"(?<%s>[^#\\\
+    \"]*)\\\"\\\\s*:\\\\s\\\"?(?<%s>null|\\\\d+|[^\\\"]*)\\\"?\\\\s*\",\n        \
+    \       ATTRIBUTE_NAME, ATTRIBUTE_VALUE));\n    Pattern noAttributes = Pattern.compile(\n\
+    \        format(\"\\\\{\\\\s*\\\"(?<%s>\\\\w+)\\\"\\\\s*:\\\\s*\\\"?(?<%s>(null|[^\\\
+    \"]*))\\\"?\\\\s*}\",\n               ELEMENT_NAME, CONTENT));\n    private final\
+    \ Pattern neverMatchingPattern = Pattern.compile(\"^@$\");\n\n    private final\
+    \ Matcher nameMatcher;\n    private final Matcher contentMatcher;\n    private\
+    \ final Matcher attributeMatcher;\n\n    public JsonReader(String jsonInput) {\n\
+    \        super(jsonInput);\n        boolean haveAttributes = isWithAttributes(jsonInput);\n\
+    \        this.nameMatcher = determineNameMatcher(haveAttributes);\n        this.contentMatcher\
+    \ = determineContentMatcher(haveAttributes);\n        this.attributeMatcher =\
+    \ determineAttributesMatcher(haveAttributes);\n    }\n\n    private boolean isWithAttributes(String\
+    \ jsonInput) {\n        return !noAttributes.matcher(jsonInput).matches();\n \
+    \   }\n\n    private Matcher determineNameMatcher(boolean haveAttributes) {\n\
+    \        return haveAttributes ? withAttributesNameAndContent.matcher(input) :\
+    \ noAttributes.matcher(input);\n    }\n\n    private Matcher determineContentMatcher(boolean\
+    \ haveAttributes) {\n        return haveAttributes ? withAttributesNameAndContent.matcher(input)\
+    \ : noAttributes.matcher(input);\n    }\n\n    private Matcher determineAttributesMatcher(boolean\
+    \ haveAttributes) {\n        return haveAttributes ? withAttributesAttributes.matcher(input)\
+    \ : neverMatchingPattern.matcher(input);\n    }\n\n    @Override\n    protected\
+    \ String getNodeElementName() {\n        return nameMatcher.matches() ? nameMatcher.group(ELEMENT_NAME)\
+    \ : null;\n    }\n\n    @Override\n    protected String getNodeContent() {\n \
+    \       return contentMatcher.matches() ? contentMatcher.group(CONTENT) : null;\n\
+    \    }\n\n    @Override\n    protected String getNodeAttributes() {\n        return\
+    \ attributeMatcher.matches() ? attributeMatcher.group(ATTRIBUTES) : null;\n  \
+    \  }\n\n    @Override\n    protected Pattern getAttributePairsPattern() {\n  \
+    \      return attributes;\n    }\n}\n"
+  learner_created: true
 feedback_link: https://hyperskill.org/projects/61/stages/332/implement
 status: Unchecked
 record: -1
