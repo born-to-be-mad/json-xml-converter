@@ -864,7 +864,7 @@ class XmlReader extends Reader {
     }
 
     private Matcher determineAttributeMatcher(boolean isFullNode) {
-        return isFullNode ? full.matcher(input) : empty.matcher(input);
+        return isFullNode ? full.matcher(input) : empty.match(input);
     }
 
     @Override
