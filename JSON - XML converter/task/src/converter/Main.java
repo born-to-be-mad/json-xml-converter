@@ -854,7 +854,7 @@ class XmlReader extends Reader {
     private boolean isFullNode(String xml) {
         return full.matcher(xml).matches();
     }
-
+net
     private Matcher determineElementNameMatcher(boolean isFullNode) {
         return isFullNode ? full.matcher(input) : empty.matcher(input);
     }
