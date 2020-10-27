@@ -1035,13 +1035,13 @@ files:
     \  }\n\n    @Override\n    protected Pattern getAttributePairsPattern() {\n  \
     \      return attributes;\n    }\n}\n"
   learner_created: true
+- name: test/test.tst
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/projects/61/stages/332/implement
-status: Failed
+status: Solved
 feedback:
-  message: |-
-    Wrong answer in test #1
-
-    The following line is not found in output:
-    Element:
-  time: Tue, 27 Oct 2020 13:20:18 UTC
+  message: Congratulations! Continue on <a href="https://hyperskill.org/projects/61/stages/332/implement">JetBrains
+    Academy</a>
+  time: Tue, 27 Oct 2020 15:20:47 UTC
 record: -1
