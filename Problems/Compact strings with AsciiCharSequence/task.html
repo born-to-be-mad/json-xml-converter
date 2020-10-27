@@ -14,7 +14,7 @@
    <li>have a constructor that takes a byte array;</li> 
    <li>have methods <code class="java">length</code>, <code class="java">charAt</code>, <code class="java">subSequence</code>, and <code class="java">toString</code>.</li> 
   </ul> 
-  <p>You can find the declaration of methods and their behavior in the description of <code class="java">java.lang.CharSequence</code> (JavaDoc or sources).</p> 
+  <p>You can find the declaration of methods and their behavior in the description of <code class="java">java.lang.CharSequence</code> (<a target="_blank" href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/CharSequence.html" rel="noopener noreferrer nofollow">JavaDoc</a> or sources).</p> 
   <p>Carefully check signatures of abstract methods of <code class="java">java.lang.CharSequence</code> interface, especially <code class="java">subSequence</code> method. It accepts 2 integers: start index (inclusive) and end index (!exclusive). The method returns an object of a class that implements <code class="java">java.lang.CharSequence</code> interface. For example, it can be an instance of <code class="java">AsciiCharSequence</code> class.</p> 
   <p><strong>Note:</strong> the testing system will always pass correct input parameters to overridden methods.</p> 
   <p>P.S. The feature is supported since Java 9 in standard strings. For details, see <a target="_blank" href="https://www.baeldung.com/java-9-compact-string" rel="noopener noreferrer nofollow">this article on compact strings in Java 9</a>.</p>
