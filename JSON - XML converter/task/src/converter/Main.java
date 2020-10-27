@@ -179,7 +179,7 @@ class JSON2XML implements Convertable {
         valueMatcher.find();
         var value = valueMatcher.group(1).strip();
         value = "null".equals(value) ? null : value;
-        return new String[]{key, value};
+        return new String[] {key, value};
     }
 
     private void writeRecursively(String name, String value, String... attributes) {
@@ -281,9 +281,15 @@ class JSON2XML implements Convertable {
         LITERAL;
 
         public static ElementType of(String elementValue) {
-            if (elementValue.charAt(0) == '{') return ElementType.OBJECT;
-            if (elementValue.charAt(0) == '[') return ElementType.ARRAY;
-            if (elementValue.charAt(0) == '"') return ElementType.STRING;
+            if (elementValue.charAt(0) == '{') {
+                return ElementType.OBJECT;
+            }
+            if (elementValue.charAt(0) == '[') {
+                return ElementType.ARRAY;
+            }
+            if (elementValue.charAt(0) == '"') {
+                return ElementType.STRING;
+            }
             return ElementType.LITERAL;
         }
     }
@@ -384,14 +390,14 @@ class XML2JSON implements Convertable {
             tagMatcher.find();
             var tag = tagMatcher.group(1);
             var nameAndAttributes = extractNameAndAttributes(tag);
-            return new String[]{nameAndAttributes[0], null, nameAndAttributes[1].strip()};
+            return new String[] {nameAndAttributes[0], null, nameAndAttributes[1].strip()};
         } else {
             var tagMatcher = elementStartingPattern.matcher(element);
             tagMatcher.find();
             var tag = tagMatcher.group(1);
             var nameAndAttributes = extractNameAndAttributes(tag);
             var content = extractContent(element);
-            return new String[]{nameAndAttributes[0], content, nameAndAttributes[1].strip()};
+            return new String[] {nameAndAttributes[0], content, nameAndAttributes[1].strip()};
         }
     }
 
@@ -452,7 +458,7 @@ class XML2JSON implements Convertable {
         }
         if (attributes != null && attributes.length() > 0) {
             var element = new ArrayList<String[]>();
-            element.add(new String[]{"#" + name, value, null});
+            element.add(new String[] {"#" + name, value, null});
             var attrs = readAttributes(attributes);
             children = Stream
                 .of(element.stream(), attrs.stream())
@@ -530,7 +536,7 @@ class XML2JSON implements Convertable {
         var result = new ArrayList<String[]>();
         var matcher = attributesPartsPattern.matcher(attributes);
         while (matcher.find()) {
-            result.add(new String[]{"@" + matcher.group(1), matcher.group(2), null});
+            result.add(new String[] {"@" + matcher.group(1), matcher.group(2), null});
         }
         return result;
     }
@@ -575,9 +581,15 @@ class XML2JSON implements Convertable {
         LITERAL;
 
         public static ValueType of(String valueType) {
-            if (valueType == null || valueType.equals("null")) return ValueType.LITERAL;
-            if (valueType.length() == 0 || valueType.charAt(0) == '"') return ValueType.STRING;
-            if (valueType.charAt(0) == '<') return ValueType.OBJECT;
+            if (valueType == null || valueType.equals("null")) {
+                return ValueType.LITERAL;
+            }
+            if (valueType.length() == 0 || valueType.charAt(0) == '"') {
+                return ValueType.STRING;
+            }
+            if (valueType.charAt(0) == '<') {
+                return ValueType.OBJECT;
+            }
             return ValueType.STRING;
         }
     }
@@ -597,14 +609,14 @@ class XML {
         //matches the space between two tags
         cleanXML = XMLString.replaceAll("(?<=>)\\s+?(?=<)", "");
         //matches the space(s) before />
-        cleanXML = cleanXML.replaceAll("\\s+?(?=/>)", ""); 
+        cleanXML = cleanXML.replaceAll("\\s+?(?=/>)", "");
         return cleanXML;
     }
 
     private void parse(String xmlDocument, Deque<String> parents) {
         //matches <tag>text</tag> or <tag/> or <tag></tag>
         //matches all the characters between <> or <  />
-        Pattern wholeTagPattern = Pattern.compile("<(\\w+).*?(\\/>|>.*?<\\/\\1>)"); 
+        Pattern wholeTagPattern = Pattern.compile("<(\\w+).*?(\\/>|>.*?<\\/\\1>)");
         Matcher wholeTagMatcher = wholeTagPattern.matcher(xmlDocument);
 
         if (wholeTagMatcher.find()) {
@@ -614,7 +626,8 @@ class XML {
                 parentsStack = parents == null ? new ArrayDeque<>() : parents;
 
                 String wholeTag = wholeTagMatcher.group();
-                endPosition = wholeTagMatcher.end(); //the end position of the match. To see if it checked the whole string
+                endPosition =
+                    wholeTagMatcher.end(); //the end position of the match. To see if it checked the whole string
 
                 //matches the opening tag (and the key in group 1)
                 Pattern tagPattern = Pattern.compile("(?<=<)(\\w+).*?\\/?(?=>)");
@@ -636,11 +649,11 @@ class XML {
                     textInsideMatchedTagMatcher.find();
                     parentsStack.offer(key);
 
-                    parse(textInsideMatchedTagMatcher.group(),parentsStack);
+                    parse(textInsideMatchedTagMatcher.group(), parentsStack);
                     parentsStack.pollLast();
                 }
                 wholeTagMatcher.find();
-            } while(endPosition < xmlDocument.length());
+            } while (endPosition < xmlDocument.length());
         }
     }
 }
@@ -651,7 +664,7 @@ class XMLTag {
     private boolean hasChild, hasAttributes;
     private String XMLString;
     private String tag; //this is the complete tag, for example <key attr1 = "value1" attr2 = "value2> without the <>
-    private LinkedHashMap<String,String> attributesMap;
+    private LinkedHashMap<String, String> attributesMap;
     private Deque<String> parents;
 
     public XMLTag(String tag, String key, String XMLString) {
@@ -686,7 +699,7 @@ class XMLTag {
 
                 if (tagMatcher.find()) {
                     this.value = tagMatcher.group();
-                }else {
+                } else {
                     this.value = "";
                 }
             }
@@ -705,7 +718,8 @@ class XMLTag {
                 attributeKeyMatcher.find();
                 String attributeKey = attributeKeyMatcher.group();
 
-                Pattern attributeValuePattern = Pattern.compile("(?<=\\\")\\w*(?=\\\")"); //matches a word enclosed in ""
+                Pattern attributeValuePattern =
+                    Pattern.compile("(?<=\\\")\\w*(?=\\\")"); //matches a word enclosed in ""
                 Matcher attributeValueMatcher = attributeValuePattern.matcher(attributeMatcher.group());
 
                 attributeValueMatcher.find();
@@ -854,7 +868,7 @@ class XmlReader extends Reader {
     private boolean isFullNode(String xml) {
         return full.matcher(xml).matches();
     }
-net
+
     private Matcher determineElementNameMatcher(boolean isFullNode) {
         return isFullNode ? full.matcher(input) : empty.matcher(input);
     }
@@ -864,7 +878,7 @@ net
     }
 
     private Matcher determineAttributeMatcher(boolean isFullNode) {
-        return isFullNode ? full.matcher(input) : empty.match(input);
+        return isFullNode ? full.matcher(input) : empty.matcher(input);
     }
 
     @Override
@@ -890,8 +904,11 @@ net
 
 class JsonReader extends Reader {
     Pattern withAttributesNameAndContent = Pattern.compile(
-        format("\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\\{[\\s\\p{ASCII}]*(\"#.*?\"\\s+:\\s+\"?(?<%s>(null|[^\"]*))\"?)[\\s\\p{ASCII}]*}\\s*}\\s*",
-               ELEMENT_NAME, CONTENT));
+        format(
+            "\\{\\s*\"(?<%s>\\w+)\"\\s*:\\s*\\{[\\s\\p{ASCII}]*(\"#.*?\"\\s+:\\s+\"?(?<%s>(null|[^\"]*))\"?)"
+            + "[\\s\\p{ASCII}]*}\\s*}\\s*",
+            ELEMENT_NAME,
+            CONTENT));
     Pattern withAttributesAttributes = Pattern.compile(
         format("[\\s\\p{ASCII}]*\\{[\\s\\p{ASCII}]*\\{(?<%s>[\\s\\p{ASCII}]*)}[\\s\\p{ASCII}]*}[\\s\\p{ASCII}]*",
                ATTRIBUTES));

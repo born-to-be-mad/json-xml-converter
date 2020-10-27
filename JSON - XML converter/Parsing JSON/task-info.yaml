@@ -1036,5 +1036,12 @@ files:
     \      return attributes;\n    }\n}\n"
   learner_created: true
 feedback_link: https://hyperskill.org/projects/61/stages/332/implement
-status: Unchecked
+status: Failed
+feedback:
+  message: |-
+    Wrong answer in test #1
+
+    The following line is not found in output:
+    Element:
+  time: Tue, 27 Oct 2020 13:20:18 UTC
 record: -1
