@@ -99,6 +99,8 @@ topics:
     theory_id: 5357
   - title: Regexps basics
     theory_id: 7580
+  - title: Functional decomposition
+    theory_id: 10570
   - title: Regexps in Java
     theory_id: 3670
   - title: Sets, ranges, alternations
@@ -157,10 +159,14 @@ topics:
     theory_id: 3510
   - title: Final variables
     theory_id: 7427
+  - title: Switch statement
+    theory_id: 3504
   - title: Iterating over arrays
     theory_id: 3602
   - title: Defining methods
     theory_id: 3590
+  - title: The main method
+    theory_id: 3489
   - title: Overloading
     theory_id: 3525
   - title: Write, compile, and run

@@ -65,50 +65,46 @@ class HashMultiset<E> implements Multiset<E> {
 
     @Override
     public void add(E elem) {
-        map.putIfAbsent(elem, 0);
-        map.compute(elem, (a, v) -> ++v);
+        // implement the method
     }
 
     @Override
     public void remove(E elem) {
-        map.computeIfPresent(elem, (a, v) -> --v);
-        if (map.get(elem) == null || map.get(elem) < 1) {
-            map.remove(elem);
-        }
+        // implement the method
     }
 
     @Override
     public void union(Multiset<E> other) {
-        other.toSet().forEach(e -> map.put(e, Math.max(other.getMultiplicity(e), map.getOrDefault(e, 1))));
+        // implement the method
     }
 
     @Override
     public void intersect(Multiset<E> other) {
-        Set<E> uniq = other.toSet();
-        uniq.retainAll(map.keySet());
-        Map<E, Integer> result = new HashMap<>();
-        uniq.forEach(e -> result.put(e, Math.min(other.getMultiplicity(e), map.getOrDefault(e, 0))));
-        map = result;
+        // implement the method
     }
 
     @Override
     public int getMultiplicity(E elem) {
-        return map.getOrDefault(elem, 0);
+        // implement the method
+        return 0;
     }
 
     @Override
     public boolean contains(E elem) {
-        return map.containsKey(elem);
+        // implement the method
+        return false;
     }
 
     @Override
     public int numberOfUniqueElements() {
-        return map.size();
+        // implement the method
+        return 0;
     }
 
     @Override
     public int size() {
-        return map.values().stream().reduce(0, Integer::sum);
+        // implement the method
+        return 0;
     }
 
     @Override
