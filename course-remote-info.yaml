@@ -161,8 +161,6 @@ topics:
     theory_id: 3558
   - title: Switch statement
     theory_id: 3504
-  - title: Defining methods
-    theory_id: 3590
   - title: Declaring a method
     theory_id: 10982
   - title: The main method
