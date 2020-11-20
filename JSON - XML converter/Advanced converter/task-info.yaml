@@ -2282,33 +2282,9 @@ files:
     }
   learner_created: false
 feedback_link: https://hyperskill.org/projects/61/stages/333/implement
-status: Failed
+status: Solved
 feedback:
-  message: |-
-    Wrong answer in test #1
-
-    Your first symbol is wrong -  should be &#39;{&#39; or &#39;&lt;&#39;
-
-    Please find below the output of your program during this failed test.
-
-    ---
-
-
-    Element:
-    path = transaction
-
-    Element:
-    path = transaction, id
-    value = &quot;6753322&quot;
-
-    Element:
-    path = transaction, number
-    value = &quot;8-900-000-00-00&quot;
-    attributes:
-    region = &quot;Russia&quot;
-
-    Element:
-    path = transaction, amount
-    value = null
-  time: Mon, 16 Nov 2020 09:59:26 UTC
+  message: Congratulations! Continue on <a href="https://hyperskill.org/projects/61/stages/333/implement">JetBrains
+    Academy</a>
+  time: Fri, 20 Nov 2020 15:23:15 UTC
 record: -1

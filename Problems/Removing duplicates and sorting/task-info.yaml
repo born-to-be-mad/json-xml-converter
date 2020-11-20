@@ -10,32 +10,9 @@ files:
     }
   learner_created: false
 feedback_link: https://hyperskill.org/learn/step/2771#comment
-status: Failed
+status: Solved
 feedback:
-  message: |
-    Failed test #1 of 5. Wrong answer
-
-    This is a sample test from the problem statement!
-
-    Test input:
-    6
-    postgres
-    sqlite
-    oracle
-    mongodb
-    postgres
-    mssql
-    Correct output:
-    mongodb
-    mssql
-    oracle
-    postgres
-    sqlite
-
-    Your code output:
-    mongodb
-    oracle
-    postgres
-    sqlite
-  time: Thu, 19 Nov 2020 12:49:28 UTC
+  message: <html>Correct solution<br/><br/>Continue on <a href="https://hyperskill.org/learn/step/2771#comment">JetBrains
+    Academy</a></html>
+  time: Thu, 19 Nov 2020 13:50:32 UTC
 record: -1
